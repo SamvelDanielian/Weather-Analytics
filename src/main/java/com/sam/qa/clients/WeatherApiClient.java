@@ -13,22 +13,21 @@ public class WeatherApiClient {
     private static final Logger logger = LoggerFactory.getLogger(WeatherApiClient.class);
     private final ConfigReader config = new ConfigReader();
 
-    public InputStream getCurrentWeatherStream(double lat, double lon) {
-        String url = String.format("%s?lat=%f&lon=%f&cnt=100&units=metric&appid=%s", 
-            config.getProperty("api.url"), lat, lon, config.getProperty("api.key")
-        );
-
+    public InputStream getSpatialWeatherStream(double lat, double lon, int stations) {
+        String url = String.format("%s?lat=%f&lon=%f&cnt=%d&units=metric&appid=%s",
+                config.getProperty("api.url"), lat, lon, stations, config.getProperty("api.key"));
+                
         AtomicReference<InputStream> responseStream = new AtomicReference<>();
 
         await()
-            .atMost(5, SECONDS)
-            .pollInterval(2, SECONDS)
-            .ignoreExceptions()
-            .until(() -> {
-                logger.info("📡 Requesting weather data from API...");
-                responseStream.set(RestAssured.get(url).asInputStream());
-                return responseStream.get() != null;
-            });
+                .atMost(5, SECONDS)
+                .pollInterval(2, SECONDS)
+                .ignoreExceptions()
+                .until(() -> {
+                    logger.info("📡 Requesting spatial cluster ({} stations) for [{}, {}]", stations, lat, lon);
+                    responseStream.set(RestAssured.get(url).asInputStream());
+                    return responseStream.get() != null;
+                });
 
         return responseStream.get();
     }
